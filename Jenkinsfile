@@ -1,104 +1,92 @@
-pipeline{
+pipeline {
 
-	agent any
+    agent any
 
-	environment {
+    environment {
         AWS_ACCESS_KEY = credentials('AWS_ACCESS_KEY')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_DEFAULT_REGION = "eu-central-1"
-	}
-	
-	stages {
-		stage('Git checkout') {
-            		steps {
-                		echo 'Cloning project codebase...'
-                		git branch: 'main', url: 'https://github.com/HILL-TOPCONSULTANCY/hilltop-eks-project.git'
-            		}
-        	}
-	/*
-        stage('Build-Image') {
+        AWS_DEFAULT_REGION = "us-east-1"
+        CLUSTER_NAME = "hilltop-eks-cluster"
+        DOCKER_REPO = "chafah/hilltop-nodejs-app"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+        stage('Git Checkout') {
+            steps {
+                echo 'Cloning project codebase...'
+                git branch: 'main', url: 'https://github.com/LandmakTechnology/devopsapp.git'
+            }
+        }
+
+        stage('Build Docker Image') {
             steps {
                 script {
-                    def imageRepoName = 'chafah/hilltop-nodejs-app'
-                    def imageTag = 'new'
-                    sh "docker build -t ${imageRepoName}:${imageTag} ."
+                    sh "docker build -t ${DOCKER_REPO}:${IMAGE_TAG} ."
+                    sh "docker tag ${DOCKER_REPO}:${IMAGE_TAG} ${DOCKER_REPO}:latest"
                     sh 'docker images'
                 }
             }
         }
 
-        stage('Docker Login') {
+        stage('Docker Login & Push') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'DOCKER', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                        sh "docker push ${DOCKER_REPO}:${IMAGE_TAG}"
+                        sh "docker push ${DOCKER_REPO}:latest"
                     }
                 }
             }
         }
 
-        stage('Push to Docker Hub') {
+        stage('Create EKS Cluster') {
             steps {
                 script {
-                    def imageRepoName = 'chafah/hilltop-nodejs-app'
-                    def imageTag = 'new'
-                    sh "docker push ${imageRepoName}:${imageTag}"
-                }
-            }
-        }
-	
-        stage("Create an EKS Cluster") {
-            steps {
-                script {
-                    // Check if the EKS cluster already exists
                     def eksClusterExists = sh(
-                        script: "aws eks describe-cluster --name eks-hilltop --query 'cluster.status' --output text || echo 'NOT_FOUND'",
+                        script: "aws eks describe-cluster --name ${CLUSTER_NAME} --query 'cluster.status' --output text || echo 'NOT_FOUND'",
                         returnStdout: true
                     ).trim()
-                    
+
                     if (eksClusterExists == "NOT_FOUND") {
-                        dir('eks') {
-                            sh "terraform init -migrate-state"
+                        dir('terraform') {
+                            sh "terraform init"
                             sh "terraform plan"
                         }
 
-                        // Manual approval step before proceeding with the apply
-                        input message: 'Do you want to proceed with the EKS cluster creation?', ok: 'Yes, proceed'
+                        input message: 'Do you want to proceed with EKS cluster creation?', ok: 'Yes, proceed'
 
-                        // Apply Terraform to create the EKS cluster
-                        dir('eks') {
+                        dir('terraform') {
                             sh "terraform apply -auto-approve"
                         }
                     } else {
-                        echo "EKS cluster already exists. Skipping Terraform apply."
+                        echo "EKS cluster '${CLUSTER_NAME}' already exists. Skipping Terraform apply."
                     }
                 }
             }
         }
-	
-        stage("Deploy to EKS") {
+
+        stage('Deploy to EKS') {
             steps {
                 script {
-                    dir('deployment') {
-                        withCredentials([string(credentialsId: 'AWS_ACCESS_KEY', variable: 'AWS_ACCESS_KEY_ID'),
-                                         string(credentialsId: 'AWS_SECRET_ACCESS_KEY', variable: 'AWS_SECRET_ACCESS_KEY')]) {
-                            sh "aws eks update-kubeconfig --name eks-hilltop"
-                            sh "kubectl apply -f deploy.yaml"
-                            sh "kubectl apply -f service.yaml"
-                        }
-                    }
+                    sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_DEFAULT_REGION}"
+                    sh "kubectl apply -f kubernetes/01-namespace/namespace.yaml"
+                    sh "kubectl apply -f kubernetes/04-configmap/configmap.yaml"
+                    sh "kubectl apply -f kubernetes/03-deployment/deployment.yaml"
+                    sh "kubectl apply -f kubernetes/03-deployment/service.yaml"
+                    sh "kubectl get svc -n landmark"
                 }
             }
         }
-	*/
-        stage("Destroy to EKS Cluster") {
-            steps {
-                script {
-                    dir('eks') {
-                            sh "terraform destroy -auto-approve"
-                    }
-                }
-            }
+    }
+
+    post {
+        success {
+            echo 'Pipeline completed successfully! Application deployed to EKS.'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
