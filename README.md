@@ -261,45 +261,7 @@ Build & Push Image → Manual Approval → Deploy to EKS
 
 The manual approval gate prevents accidental deployments to production.
 
----
 
-## Project Structure
-
-```
-devopsapp/
-├── app.js                    # Node.js application entry point
-├── package.json              # Dependencies
-├── Dockerfile                # Container image definition
-├── Jenkinsfile               # Jenkins pipeline
-├── .github/workflows/
-│   └── deploy.yml            # GitHub Actions pipeline
-├── .circleci/
-│   └── config.yml            # CircleCI pipeline
-├── terraform/                # EKS infrastructure (deploy manually)
-│   ├── providers.tf
-│   ├── variables.tf
-│   ├── vpc.tf
-│   ├── eks.tf
-│   └── outputs.tf
-├── kubernetes/               # K8s manifests (incremental demos)
-│   ├── 01-namespace/
-│   ├── 02-pod/
-│   ├── 03-deployment/
-│   ├── 04-configmap/
-│   ├── 05-secret/
-│   ├── 06-ingress/
-│   ├── 07-hpa/
-│   ├── 08-daemonset/
-│   ├── 09-serviceaccount/
-│   ├── 10-pv-pvc/
-│   ├── 11-statefulset/
-│   ├── 12-services/
-│   └── 13-external-secrets/
-└── views/                    # Frontend HTML/CSS
-    ├── index.html
-    ├── containers.html
-    └── css/
-```
 
 ---
 
