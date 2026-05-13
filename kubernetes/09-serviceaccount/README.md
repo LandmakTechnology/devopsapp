@@ -47,11 +47,11 @@ kubectl get svc landmark-sa-service -n landmark -o jsonpath='{.status.loadBalanc
 ### Setting up IRSA (IAM Roles for Service Accounts)
 ```bash
 # 1. Ensure OIDC provider exists
-eksctl utils associate-iam-oidc-provider --cluster hilltop-eks-cluster --region us-east-1 --approve
+eksctl utils associate-iam-oidc-provider --cluster landmark-eks-cluster --region us-east-1 --approve
 
 # 2. Create IAM role and link to the ServiceAccount
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=landmark \
   --name=landmark-sa \
   --attach-policy-arn=arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess \

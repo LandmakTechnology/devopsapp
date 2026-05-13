@@ -54,7 +54,7 @@ kubectl get svc landmark-pvc-service -n landmark -o jsonpath='{.status.loadBalan
 ```bash
 # 1. Create IAM role for the EBS CSI driver
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=kube-system \
   --name=ebs-csi-controller-sa \
   --attach-policy-arn=arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy \
@@ -62,7 +62,7 @@ eksctl create iamserviceaccount \
 
 # 2. Install the EBS CSI driver as an EKS add-on
 aws eks create-addon \
-  --cluster-name hilltop-eks-cluster \
+  --cluster-name landmark-eks-cluster \
   --addon-name aws-ebs-csi-driver \
   --service-account-role-arn arn:aws:iam::<ACCOUNT_ID>:role/AmazonEKS_EBS_CSI_DriverRole
 

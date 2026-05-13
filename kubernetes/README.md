@@ -31,25 +31,25 @@ Deploy using the `terraform/` folder in this repo:
 ```bash
 cd ../terraform
 terraform init && terraform apply
-aws eks update-kubeconfig --region us-east-1 --name hilltop-eks-cluster
+aws eks update-kubeconfig --region us-east-1 --name landmark-eks-cluster
 ```
 
 ### 2. AWS Load Balancer Controller
 Required for: LoadBalancer services, Ingress
 ```bash
-eksctl utils associate-iam-oidc-provider --cluster hilltop-eks-cluster --region us-east-1 --approve
+eksctl utils associate-iam-oidc-provider --cluster landmark-eks-cluster --region us-east-1 --approve
 
 curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.1/docs/install/iam_policy.json
 aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
 
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster --namespace=kube-system \
+  --cluster=landmark-eks-cluster --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy --approve
 
 helm repo add eks https://aws.github.io/eks-charts && helm repo update
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
-  -n kube-system --set clusterName=hilltop-eks-cluster \
+  -n kube-system --set clusterName=landmark-eks-cluster \
   --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
 ```
 
@@ -57,11 +57,11 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 Required for: PV/PVC, StatefulSet
 ```bash
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster --namespace=kube-system \
+  --cluster=landmark-eks-cluster --namespace=kube-system \
   --name=ebs-csi-controller-sa \
   --attach-policy-arn=arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy --approve
 
-aws eks create-addon --cluster-name hilltop-eks-cluster --addon-name aws-ebs-csi-driver \
+aws eks create-addon --cluster-name landmark-eks-cluster --addon-name aws-ebs-csi-driver \
   --service-account-role-arn arn:aws:iam::<ACCOUNT_ID>:role/AmazonEKS_EBS_CSI_DriverRole
 ```
 

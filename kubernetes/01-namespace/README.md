@@ -19,7 +19,7 @@ kubectl get ns landmark
 
 ## Prerequisites
 - A running Kubernetes cluster (EKS)
-- kubectl configured (`aws eks update-kubeconfig --region us-east-1 --name hilltop-eks-cluster`)
+- kubectl configured (`aws eks update-kubeconfig --region us-east-1 --name landmark-eks-cluster`)
 
 ## Cleanup
 ```bash

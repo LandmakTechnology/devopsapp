@@ -3,7 +3,7 @@ variable "region" {
 }
 
 variable "cluster_name" {
-  default = "hilltop-eks-cluster"
+  default = "landmark-eks-cluster"
 }
 
 variable "vpc_cidr" {

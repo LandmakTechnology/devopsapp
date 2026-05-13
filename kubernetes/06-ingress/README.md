@@ -38,7 +38,7 @@ Open the URL in your browser — traffic flows: Internet → ALB → Service →
 The ALB Ingress Controller must be installed to provision an Application Load Balancer:
 ```bash
 # 1. Create IAM OIDC provider
-eksctl utils associate-iam-oidc-provider --cluster hilltop-eks-cluster --region us-east-1 --approve
+eksctl utils associate-iam-oidc-provider --cluster landmark-eks-cluster --region us-east-1 --approve
 
 # 2. Download and create IAM policy
 curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.1/docs/install/iam_policy.json
@@ -46,7 +46,7 @@ aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-
 
 # 3. Create IRSA service account
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
@@ -57,7 +57,7 @@ helm repo add eks https://aws.github.io/eks-charts
 helm repo update
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=hilltop-eks-cluster \
+  --set clusterName=landmark-eks-cluster \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 

@@ -7,7 +7,7 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  CLUSTER_NAME: hilltop-eks-cluster
+  CLUSTER_NAME: landmark-eks-cluster
   DOCKER_REPO: chafah/hilltop-nodejs-app
 
 jobs:

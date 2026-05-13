@@ -117,13 +117,13 @@ aws iam create-policy \
 ```bash
 # Ensure OIDC provider exists
 eksctl utils associate-iam-oidc-provider \
-  --cluster hilltop-eks-cluster \
+  --cluster landmark-eks-cluster \
   --region us-east-1 \
   --approve
 
 # Create the service account with IAM role
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=landmark \
   --name=external-secrets-sa \
   --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/ExternalSecretsPolicy \

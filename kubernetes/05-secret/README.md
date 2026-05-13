@@ -72,7 +72,7 @@ aws iam create-policy --policy-name ExternalSecretsPolicy --policy-document '{
 
 # Create IRSA service account
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=landmark \
   --name=external-secrets-sa \
   --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/ExternalSecretsPolicy \

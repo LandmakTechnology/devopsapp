@@ -98,7 +98,7 @@ kubectl get ingress landmark-ingress-demo -n landmark -o jsonpath='{.status.load
 AWS Load Balancer Controller must be installed:
 ```bash
 # 1. Create IAM OIDC provider
-eksctl utils associate-iam-oidc-provider --cluster hilltop-eks-cluster --region us-east-1 --approve
+eksctl utils associate-iam-oidc-provider --cluster landmark-eks-cluster --region us-east-1 --approve
 
 # 2. Download IAM policy
 curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.1/docs/install/iam_policy.json
@@ -106,7 +106,7 @@ aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-
 
 # 3. Create IRSA service account
 eksctl create iamserviceaccount \
-  --cluster=hilltop-eks-cluster \
+  --cluster=landmark-eks-cluster \
   --namespace=kube-system \
   --name=aws-load-balancer-controller \
   --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
@@ -117,7 +117,7 @@ helm repo add eks https://aws.github.io/eks-charts
 helm repo update
 helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
-  --set clusterName=hilltop-eks-cluster \
+  --set clusterName=landmark-eks-cluster \
   --set serviceAccount.create=false \
   --set serviceAccount.name=aws-load-balancer-controller
 
@@ -129,7 +129,7 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 Open the port in the worker node Security Group:
 ```bash
 # Get the security group ID of the worker nodes
-SG_ID=$(aws ec2 describe-security-groups --filters "Name=tag:kubernetes.io/cluster/hilltop-eks-cluster,Values=owned" --query 'SecurityGroups[0].GroupId' --output text)
+SG_ID=$(aws ec2 describe-security-groups --filters "Name=tag:kubernetes.io/cluster/landmark-eks-cluster,Values=owned" --query 'SecurityGroups[0].GroupId' --output text)
 
 # Allow inbound traffic on port 30080
 aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 30080 --cidr 0.0.0.0/0
