@@ -1,8 +1,8 @@
 {
-    "name": "hilltop-nodejs-image",
+    "name": "landmark-nodejs-image",
     "version": "1.0.0",
-    "description": "Hilltop Demo App",
-    "author": "Hilltop Consultancy", 
+    "description": "Landmark Technology Demo App",
+    "author": "Landmark Technology", 
     "license": "MIT",
     "main": "app.js",
     "keywords": [
