@@ -1,27 +1,288 @@
-# Steps TO DEPLOY THE APPLICATION
+# Landmark Technology - DevOps End-to-End Application
 
-1. Clone the Repository to your local
-```sh
-git clone <RepoURL>
+A Node.js application deployed to AWS EKS with full CI/CD pipelines (Jenkins, GitHub Actions, CircleCI).
+
+---
+
+## Architecture
+
 ```
-2. Initialize terrraform to create instance and deploy jenkins
-```sh
-cd jenkins
+Developer → Git Push → CI/CD Pipeline → Docker Hub → EKS Cluster → LoadBalancer → Users
 ```
-```sh
+
+---
+
+## Prerequisites
+
+- AWS Account with IAM user (programmatic access)
+- AWS CLI installed and configured
+- Terraform installed (v1.3+)
+- kubectl installed
+- Docker installed
+- Helm installed
+- A Docker Hub account
+
+---
+
+## Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/LandmakTechnology/devopsapp.git
+cd devopsapp
+```
+
+---
+
+## Step 2: Deploy Infrastructure (Terraform)
+
+Provision the VPC and EKS cluster with 2 x t3.medium nodes:
+
+```bash
+cd terraform
 terraform init
-terraform apply --auto-approve
+terraform plan
+terraform apply -auto-approve
 ```
-+ The terraform script will deploy and EC2 instance and the jenkins.sh script will run as userdata to bootstrap the server
-3. Copy the instance Public IP  and access jenkins on the browser
-```sh
-http://<public>:8080
+
+This creates:
+- VPC with 2 public subnets (tagged for ELB)
+- Internet Gateway + Route Table
+- EKS Cluster with IAM roles
+- Node Group (2 x t3.medium)
+
+---
+
+## Step 3: Configure kubectl
+
+```bash
+aws eks update-kubeconfig --region us-east-1 --name landmark-eks-cluster
+kubectl get nodes
 ```
-4. Copy the jenkins token and login to the jenkins server
-5. Go to manage jenkins and create project and either use a jenkins file of a pipeline syntax
-6. The pipeline will clone the repo
-7. In the current directory, run a docker build in the pipeline
-8. Docker login into the repo and push the image to the DockerHub
-9. cd into the eks, use terraform to create the cluster
-10. in the directory, run kubectl apply -f deployment/
-11. copy the url of the loadbalancer created on aws and access the aplication.
+
+---
+
+## Step 4: Install AWS Load Balancer Controller
+
+Required for the LoadBalancer service to provision an ELB:
+
+```bash
+# 1. Create OIDC provider
+eksctl utils associate-iam-oidc-provider --cluster landmark-eks-cluster --region us-east-1 --approve
+
+# 2. Create IAM policy
+curl -o iam_policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.6.1/docs/install/iam_policy.json
+aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam_policy.json
+
+# 3. Create service account
+eksctl create iamserviceaccount \
+  --cluster=landmark-eks-cluster \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::<ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy \
+  --approve
+
+# 4. Install via Helm
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=landmark-eks-cluster \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller
+
+# 5. Verify
+kubectl get deployment -n kube-system aws-load-balancer-controller
+```
+
+---
+
+## Step 5: Deploy the Application Manually
+
+```bash
+kubectl apply -f kubernetes/01-namespace/namespace.yaml
+kubectl apply -f kubernetes/04-configmap/configmap.yaml
+kubectl apply -f kubernetes/03-deployment/deployment.yaml
+kubectl apply -f kubernetes/03-deployment/service.yaml
+```
+
+---
+
+## Step 6: Access the Application
+
+```bash
+# Get the LoadBalancer URL
+kubectl get svc landmark-app-service -n landmark
+
+# Or extract just the hostname
+kubectl get svc landmark-app-service -n landmark -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+```
+
+Open the URL in your browser on port 80. It may take 2-3 minutes for the ELB to become active.
+
+---
+
+## CI/CD Pipeline Options
+
+Choose one of the following CI/CD tools to automate the build and deploy process.
+
+---
+
+### Option A: Jenkins
+
+**File:** `Jenkinsfile`
+
+#### Jenkins Setup
+1. Deploy a Jenkins server (use the `jenkins/` folder or a Docker container):
+   ```bash
+   docker run -d -p 8080:8080 jenkins/jenkins:latest
+   ```
+2. Access Jenkins at `http://<JENKINS_IP>:8080`
+3. Get the initial password:
+   ```bash
+   docker exec <container_id> cat /var/jenkins_home/secrets/initialAdminPassword
+   ```
+4. Install suggested plugins
+
+#### Credentials Required
+| Credential ID | Type | Description |
+|---------------|------|-------------|
+| `DOCKER` | Username/Password | Docker Hub credentials |
+| `AWS_ACCESS_KEY` | Secret text | AWS Access Key ID |
+| `AWS_SECRET_ACCESS_KEY` | Secret text | AWS Secret Access Key |
+
+#### Create the Pipeline
+1. New Item → Pipeline
+2. Pipeline Definition → Pipeline script from SCM
+3. SCM: Git
+4. Repository URL: `https://github.com/LandmakTechnology/devopsapp.git`
+5. Branch: `*/main`
+6. Script Path: `Jenkinsfile`
+7. Save and Build
+
+#### Pipeline Stages
+```
+Git Checkout → Build Docker Image → Push to Docker Hub → Deploy to EKS
+```
+
+#### (Optional) GitHub Webhook for Auto-Trigger
+1. In GitHub: Settings → Webhooks → Add webhook
+   - Payload URL: `http://<JENKINS_IP>:8080/github-webhook/`
+   - Content type: `application/json`
+2. In Jenkins: Pipeline → Configure → Build Triggers → Select "GitHub hook trigger for GITScm polling"
+
+---
+
+### Option B: GitHub Actions
+
+**File:** `.github/workflows/deploy.yml`
+
+#### Secrets Required
+Add these in GitHub → Settings → Secrets and variables → Actions:
+
+| Secret | Description |
+|--------|-------------|
+| `DOCKER_USERNAME` | Docker Hub username |
+| `DOCKER_PASSWORD` | Docker Hub password |
+| `AWS_ACCESS_KEY_ID` | AWS Access Key ID |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Access Key |
+
+#### How It Works
+- Triggers automatically on push to `main` branch
+- Can also be triggered manually via "Run workflow" button
+- Two jobs: `build-and-push` → `deploy`
+
+#### Pipeline Stages
+```
+Checkout → Build & Push Image → Configure AWS → Update kubeconfig → Deploy to EKS → Print LB URL
+```
+
+---
+
+### Option C: CircleCI
+
+**File:** `.circleci/config.yml`
+
+#### Contexts Required
+Create these in CircleCI → Organization Settings → Contexts:
+
+**Context: `docker-credentials`**
+| Variable | Description |
+|----------|-------------|
+| `DOCKER_USERNAME` | Docker Hub username |
+| `DOCKER_PASSWORD` | Docker Hub password |
+
+**Context: `aws-credentials`**
+| Variable | Description |
+|----------|-------------|
+| `AWS_ACCESS_KEY_ID` | AWS Access Key ID |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Access Key |
+| `AWS_DEFAULT_REGION` | `us-east-1` |
+
+#### Setup
+1. Go to [circleci.com](https://circleci.com) and connect your GitHub repo
+2. Create the contexts above
+3. Push to `main` to trigger the pipeline
+
+#### Pipeline Stages
+```
+Build & Push Image → Manual Approval → Deploy to EKS
+```
+
+The manual approval gate prevents accidental deployments to production.
+
+---
+
+## Project Structure
+
+```
+devopsapp/
+├── app.js                    # Node.js application entry point
+├── package.json              # Dependencies
+├── Dockerfile                # Container image definition
+├── Jenkinsfile               # Jenkins pipeline
+├── .github/workflows/
+│   └── deploy.yml            # GitHub Actions pipeline
+├── .circleci/
+│   └── config.yml            # CircleCI pipeline
+├── terraform/                # EKS infrastructure (deploy manually)
+│   ├── providers.tf
+│   ├── variables.tf
+│   ├── vpc.tf
+│   ├── eks.tf
+│   └── outputs.tf
+├── kubernetes/               # K8s manifests (incremental demos)
+│   ├── 01-namespace/
+│   ├── 02-pod/
+│   ├── 03-deployment/
+│   ├── 04-configmap/
+│   ├── 05-secret/
+│   ├── 06-ingress/
+│   ├── 07-hpa/
+│   ├── 08-daemonset/
+│   ├── 09-serviceaccount/
+│   ├── 10-pv-pvc/
+│   ├── 11-statefulset/
+│   ├── 12-services/
+│   └── 13-external-secrets/
+└── views/                    # Frontend HTML/CSS
+    ├── index.html
+    ├── containers.html
+    └── css/
+```
+
+---
+
+## Cleanup
+
+```bash
+# Delete all Kubernetes resources
+kubectl delete namespace landmark
+
+# Destroy infrastructure
+cd terraform
+terraform destroy -auto-approve
+```
+
+---
+
+## Happy Learning from Landmark Technology 🚀
