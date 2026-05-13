@@ -20,7 +20,7 @@ spec:
       serviceAccountName: landmark-sa
       containers:
       - name: nodejs
-        image: chafah/hilltop-nodejs-app:new
+        image: ACCOUNT/REPO:TAG
         ports:
         - containerPort: 8080
         resources:

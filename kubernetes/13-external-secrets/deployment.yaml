@@ -20,7 +20,7 @@ spec:
       serviceAccountName: external-secrets-sa
       containers:
       - name: nodejs
-        image: chafah/hilltop-nodejs-app:new
+        image: ACCOUNT/REPO:TAG
         ports:
         - containerPort: 8080
         envFrom:

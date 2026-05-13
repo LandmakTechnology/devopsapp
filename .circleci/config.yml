@@ -20,15 +20,15 @@ jobs:
           name: Build Docker image
           command: |
             IMAGE_TAG=${CIRCLE_SHA1:0:7}
-            docker build -t chafah/hilltop-nodejs-app:${IMAGE_TAG} .
-            docker tag chafah/hilltop-nodejs-app:${IMAGE_TAG} chafah/hilltop-nodejs-app:latest
+            docker build -t ${DOCKER_REPO}:${IMAGE_TAG} .
+            docker tag ${DOCKER_REPO}:${IMAGE_TAG} ${DOCKER_REPO}:latest
       - run:
           name: Push to Docker Hub
           command: |
             echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
             IMAGE_TAG=${CIRCLE_SHA1:0:7}
-            docker push chafah/hilltop-nodejs-app:${IMAGE_TAG}
-            docker push chafah/hilltop-nodejs-app:latest
+            docker push ${DOCKER_REPO}:${IMAGE_TAG}
+            docker push ${DOCKER_REPO}:latest
 
   deploy-to-eks:
     executor: default
@@ -44,6 +44,11 @@ jobs:
       - run:
           name: Configure kubeconfig
           command: aws eks update-kubeconfig --name landmark-eks-cluster --region us-east-1
+      - run:
+          name: Set image in manifests
+          command: |
+            IMAGE_TAG=${CIRCLE_SHA1:0:7}
+            sed -i "s|ACCOUNT/REPO:TAG|${DOCKER_REPO}:${IMAGE_TAG}|g" kubernetes/03-deployment/deployment.yaml
       - run:
           name: Deploy application
           command: |

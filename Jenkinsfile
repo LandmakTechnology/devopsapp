@@ -7,7 +7,7 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
         AWS_DEFAULT_REGION = "us-east-1"
         CLUSTER_NAME = "landmark-eks-cluster"
-        DOCKER_REPO = "chafah/hilltop-nodejs-app"
+        DOCKER_REPO = "landmark/devopsapp"
         IMAGE_TAG = "${BUILD_NUMBER}"
     }
 
@@ -45,6 +45,7 @@ pipeline {
             steps {
                 script {
                     sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_DEFAULT_REGION}"
+                    sh "sed -i 's|ACCOUNT/REPO:TAG|${DOCKER_REPO}:${IMAGE_TAG}|g' kubernetes/03-deployment/deployment.yaml"
                     sh "kubectl apply -f kubernetes/01-namespace/namespace.yaml"
                     sh "kubectl apply -f kubernetes/04-configmap/configmap.yaml"
                     sh "kubectl apply -f kubernetes/03-deployment/deployment.yaml"

@@ -33,7 +33,30 @@ cd devopsapp
 
 ---
 
-## Step 2: Deploy Infrastructure (Terraform)
+## Step 2: Build, Login & Push Docker Image
+
+Build the image using your own Docker Hub account:
+
+```bash
+# Replace with your Docker Hub account and repo name
+export DOCKER_REPO="your-dockerhub-username/devopsapp"
+export IMAGE_TAG="v1"
+
+# Build
+docker build -t ${DOCKER_REPO}:${IMAGE_TAG} .
+docker tag ${DOCKER_REPO}:${IMAGE_TAG} ${DOCKER_REPO}:latest
+
+# Login
+docker login -u your-dockerhub-username
+
+# Push
+docker push ${DOCKER_REPO}:${IMAGE_TAG}
+docker push ${DOCKER_REPO}:latest
+```
+
+---
+
+## Step 3: Deploy Infrastructure (Terraform)
 
 Provision the VPC and EKS cluster with 2 x t3.medium nodes:
 
@@ -52,7 +75,7 @@ This creates:
 
 ---
 
-## Step 3: Configure kubectl
+## Step 4: Configure kubectl
 
 ```bash
 aws eks update-kubeconfig --region us-east-1 --name landmark-eks-cluster
@@ -61,7 +84,7 @@ kubectl get nodes
 
 ---
 
-## Step 4: Install AWS Load Balancer Controller
+## Step 5: Install AWS Load Balancer Controller
 
 Required for the LoadBalancer service to provision an ELB:
 
@@ -96,9 +119,15 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 
 ---
 
-## Step 5: Deploy the Application Manually
+## Step 6: Deploy the Application Manually
+
+Replace the image placeholder in the manifest with your actual image, then deploy:
 
 ```bash
+# Replace the placeholder with your image
+sed -i 's|ACCOUNT/REPO:TAG|your-dockerhub-username/devopsapp:v1|g' kubernetes/03-deployment/deployment.yaml
+
+# Deploy
 kubectl apply -f kubernetes/01-namespace/namespace.yaml
 kubectl apply -f kubernetes/04-configmap/configmap.yaml
 kubectl apply -f kubernetes/03-deployment/deployment.yaml
@@ -107,7 +136,7 @@ kubectl apply -f kubernetes/03-deployment/service.yaml
 
 ---
 
-## Step 6: Access the Application
+## Step 7: Access the Application
 
 ```bash
 # Get the LoadBalancer URL
@@ -124,6 +153,8 @@ Open the URL in your browser on port 80. It may take 2-3 minutes for the ELB to 
 ## CI/CD Pipeline Options
 
 Choose one of the following CI/CD tools to automate the build and deploy process.
+
+All pipelines use a `DOCKER_REPO` environment variable (e.g., `landmark/devopsapp`). Update this in the pipeline file to match your Docker Hub `account/repo`. The pipelines automatically replace the `ACCOUNT/REPO:TAG` placeholder in the Kubernetes manifests at deploy time.
 
 ---
 
