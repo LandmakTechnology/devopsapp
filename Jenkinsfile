@@ -41,32 +41,6 @@ pipeline {
             }
         }
 
-        stage('Create EKS Cluster') {
-            steps {
-                script {
-                    def eksClusterExists = sh(
-                        script: "aws eks describe-cluster --name ${CLUSTER_NAME} --query 'cluster.status' --output text || echo 'NOT_FOUND'",
-                        returnStdout: true
-                    ).trim()
-
-                    if (eksClusterExists == "NOT_FOUND") {
-                        dir('terraform') {
-                            sh "terraform init"
-                            sh "terraform plan"
-                        }
-
-                        input message: 'Do you want to proceed with EKS cluster creation?', ok: 'Yes, proceed'
-
-                        dir('terraform') {
-                            sh "terraform apply -auto-approve"
-                        }
-                    } else {
-                        echo "EKS cluster '${CLUSTER_NAME}' already exists. Skipping Terraform apply."
-                    }
-                }
-            }
-        }
-
         stage('Deploy to EKS') {
             steps {
                 script {

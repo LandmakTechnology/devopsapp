@@ -30,23 +30,6 @@ jobs:
             docker push chafah/hilltop-nodejs-app:${IMAGE_TAG}
             docker push chafah/hilltop-nodejs-app:latest
 
-  terraform-apply:
-    executor: default
-    steps:
-      - checkout
-      - run:
-          name: Install Terraform
-          command: |
-            wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
-            echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
-            sudo apt-get update && sudo apt-get install terraform -y
-      - run:
-          name: Terraform Init & Apply
-          working_directory: terraform
-          command: |
-            terraform init
-            terraform apply -auto-approve
-
   deploy-to-eks:
     executor: default
     steps:
@@ -80,14 +63,10 @@ workflows:
     jobs:
       - build-and-push:
           context: docker-credentials
-      - terraform-apply:
-          context: aws-credentials
-          requires:
-            - build-and-push
       - hold-deploy:
           type: approval
           requires:
-            - terraform-apply
+            - build-and-push
       - deploy-to-eks:
           context: aws-credentials
           requires:
