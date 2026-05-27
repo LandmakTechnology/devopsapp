@@ -8,7 +8,7 @@ on:
 env:
   AWS_REGION: us-east-1
   CLUSTER_NAME: landmark-eks-cluster
-  DOCKER_REPO: landmark/devopsapp
+  DOCKER_REPO: chafah/devopsapp
 
 jobs:
   build-and-push:
@@ -57,7 +57,7 @@ jobs:
 
       - name: Set image in manifests
         run: |
-          sed -i 's|ACCOUNT/REPO:TAG|${{ env.DOCKER_REPO }}:${{ needs.build-and-push.outputs.image_tag }}|g' kubernetes/03-deployment/deployment.yaml
+          sed -i 's|chafah/devopsapp:latest|${{ env.DOCKER_REPO }}:${{ needs.build-and-push.outputs.image_tag }}|g' kubernetes/03-deployment/deployment.yaml
 
       - name: Deploy to EKS
         run: |

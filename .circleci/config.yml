@@ -48,7 +48,7 @@ jobs:
           name: Set image in manifests
           command: |
             IMAGE_TAG=${CIRCLE_SHA1:0:7}
-            sed -i "s|ACCOUNT/REPO:TAG|${DOCKER_REPO}:${IMAGE_TAG}|g" kubernetes/03-deployment/deployment.yaml
+            sed -i "s|chafah/devopsapp:latest|${DOCKER_REPO}:${IMAGE_TAG}|g" kubernetes/03-deployment/deployment.yaml
       - run:
           name: Deploy application
           command: |

@@ -45,7 +45,7 @@ pipeline {
             steps {
                 script {
                     sh "aws eks update-kubeconfig --name ${CLUSTER_NAME} --region ${AWS_DEFAULT_REGION}"
-                    sh "sed -i 's|ACCOUNT/REPO:TAG|${DOCKER_REPO}:${IMAGE_TAG}|g' kubernetes/03-deployment/deployment.yaml"
+                    sh "sed -i 's|chafah/devopsapp:latest|${DOCKER_REPO}:${IMAGE_TAG}|g' kubernetes/03-deployment/deployment.yaml"
                     sh "kubectl apply -f kubernetes/01-namespace/namespace.yaml"
                     sh "kubectl apply -f kubernetes/04-configmap/configmap.yaml"
                     sh "kubectl apply -f kubernetes/03-deployment/deployment.yaml"

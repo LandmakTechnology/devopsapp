@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: nodejs
-        image: ACCOUNT/REPO:TAG
+        image: chafah/devopsapp:latest
         ports:
         - containerPort: 8080
         volumeMounts:

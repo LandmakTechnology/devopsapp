@@ -111,8 +111,9 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   -n kube-system \
   --set clusterName=landmark-eks-cluster \
   --set serviceAccount.create=false \
-  --set serviceAccount.name=aws-load-balancer-controller
-
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=us-east-1 \
+  --set vpcId=<VPC_ID>
 # 5. Verify
 kubectl get deployment -n kube-system aws-load-balancer-controller
 ```
@@ -125,7 +126,7 @@ Replace the image placeholder in the manifest with your actual image, then deplo
 
 ```bash
 # Replace the placeholder with your image
-sed -i 's|ACCOUNT/REPO:TAG|your-dockerhub-username/devopsapp:v1|g' kubernetes/03-deployment/deployment.yaml
+sed -i 's|chafah/devopsapp:latest|your-dockerhub-username/devopsapp:v1|g' kubernetes/03-deployment/deployment.yaml
 
 # Deploy
 kubectl apply -f kubernetes/01-namespace/namespace.yaml
@@ -154,7 +155,7 @@ Open the URL in your browser on port 80. It may take 2-3 minutes for the ELB to 
 
 Choose one of the following CI/CD tools to automate the build and deploy process.
 
-All pipelines use a `DOCKER_REPO` environment variable (e.g., `landmark/devopsapp`). Update this in the pipeline file to match your Docker Hub `account/repo`. The pipelines automatically replace the `ACCOUNT/REPO:TAG` placeholder in the Kubernetes manifests at deploy time.
+All pipelines use a `DOCKER_REPO` environment variable (e.g., `landmark/devopsapp`). Update this in the pipeline file to match your Docker Hub `account/repo`. The pipelines automatically replace the `chafah/devopsapp:latest` placeholder in the Kubernetes manifests at deploy time.
 
 ---
 

@@ -20,7 +20,7 @@ spec:
       serviceAccountName: landmark-sa
       containers:
       - name: nodejs
-        image: ACCOUNT/REPO:TAG
+        image: chafah/devopsapp:latest
         ports:
         - containerPort: 8080
         resources:
