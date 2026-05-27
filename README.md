@@ -84,7 +84,31 @@ kubectl get nodes
 
 ---
 
-## Step 5: Install AWS Load Balancer Controller
+## Step 5: Tag Subnets for Load Balancer Discovery
+
+The AWS Load Balancer Controller requires specific tags on subnets to discover them. If your LoadBalancer stays in `<pending>` state, tag your subnets:
+
+```bash
+# Get your subnet IDs
+aws ec2 describe-subnets --filters "Name=vpc-id,Values=<YOUR_VPC_ID>" --query 'Subnets[].SubnetId' --output text
+
+# Tag each public subnet (replace subnet IDs with yours)
+aws ec2 create-tags --resources subnet-xxxxx subnet-yyyyy --tags \
+  Key=kubernetes.io/role/elb,Value=1 \
+  Key=kubernetes.io/cluster/landmark-eks-cluster,Value=owned
+```
+
+**Required subnet tags:**
+| Tag Key | Value | Purpose |
+|---------|-------|--------|
+| `kubernetes.io/role/elb` | `1` | Tells LB controller to use these subnets for internet-facing LBs |
+| `kubernetes.io/cluster/landmark-eks-cluster` | `owned` | Associates subnets with the cluster |
+
+> **Note:** For private subnets (internal LBs), use `kubernetes.io/role/internal-elb` = `1` instead.
+
+---
+
+## Step 6: Install AWS Load Balancer Controller
 
 Required for the LoadBalancer service to provision an ELB:
 
@@ -120,7 +144,7 @@ kubectl get deployment -n kube-system aws-load-balancer-controller
 
 ---
 
-## Step 6: Deploy the Application Manually
+## Step 7: Deploy the Application Manually
 
 Replace the image placeholder in the manifest with your actual image, then deploy:
 
@@ -137,7 +161,7 @@ kubectl apply -f kubernetes/03-deployment/service.yaml
 
 ---
 
-## Step 7: Access the Application
+## Step 8: Access the Application
 
 ```bash
 # Get the LoadBalancer URL
