@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
       - name: nodejs
-        image: chafah/devopsapp:latest
+        image: lerisngwa/landmark_nodejsapp:v1.0
         ports:
         - containerPort: 8080
         resources:
